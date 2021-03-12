@@ -31,4 +31,4 @@ app.use('/', (req, res) => {
   res.send(events);
 });
 
-app.listen(5000, () => console.log('API running on port 5000'));
+app.listen(5002, () => console.log('API running on port 5000'));
