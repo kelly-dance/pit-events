@@ -14,7 +14,7 @@ const addEvents = async () => {
   const newEvents = await getEvents();
   const last = events[events.length - 1];
   const toAdd = newEvents.filter(e => e.timestamp > last.timestamp);
-  events.push(toAdd);
+  events.push(...toAdd);
 };
 
 // load events when process starts up
