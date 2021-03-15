@@ -23,24 +23,37 @@ const addEvents = async () => {
   }
 };
 
-// load events when process starts up
-addEvents();
+(async()=>{
+  while(true){
+    await addEvents();
+    // 4-8 hours
+    await new Promise(r => setTimeout(r, (4 + Math.random() * 4) * 60 * 60 * 1e3))
+  }
+})();
 
-// every 4-8 hours reload events
-setInterval(() => {
-  addEvents();
-}, (4 + Math.random() * 4) * 60 * 60 * 1e3);
+/** @typedef {{uuid: string, supporter: boolean}} Entry */
 
 const validateKey = (() => {
+  /** @type {Record<string, Entry>} */
   const store = {};
 
+  /** @type {(key: string) => Promise<undefined | string>} */
   const checkKey = async key => {
     try{
       const keyRequest = await fetch(`https://api.hypixel.net/key?key=${key}`);
-      if(!keyRequest.ok) return false;
+      if(!keyRequest.ok) return;
       const keyData = await keyRequest.json();
-      if(!keyData.success) return false;
-      const playerRequest = await fetch(`https://api.hypixel.net/player?key=${key}&uuid=${keyData.record.owner}`);
+      if(!keyData.success) return;
+      return keyData.record.owner;
+    }catch(e){
+      return;
+    }
+  }
+
+  /** @type {(uuid: string) => Promise<boolean>} */
+  const checkUUID = async uuid => {
+    try{
+      const playerRequest = await fetch(`https://api.hypixel.net/player?key=${process.env.APIKEY}&uuid=${uuid}`);
       if(!playerRequest.ok) return false;
       const playerData = await playerRequest.json();
       if(!playerData.success) return false;
@@ -52,12 +65,19 @@ const validateKey = (() => {
   }
 
   return /** @type {(key: string) => Promise<Boolean>} */ async key => {
-    if(key in store) return store[key];
-    const isValid = await checkKey(key);
-    store[key] = isValid;
-    // expire after 1 day
-    setTimeout(() => store[key] = undefined, 86400e3);
-    return isValid;
+    if(key in store) {
+      if(store[key].supporter) return true;
+      const supporter = await checkUUID(store[key].uuid);
+      store[key].supporter = supporter;
+      return supporter;
+    }
+    const uuid = await checkKey(key);
+    if(!uuid) return false;
+    const supporter = await checkUUID(uuid);
+    store[key] = { uuid, supporter };
+    // expire after 7 days
+    setTimeout(() => store[key] = undefined, 7 * 24 * 60 * 60 * 1e3);
+    return supporter;
   }
 })();
 

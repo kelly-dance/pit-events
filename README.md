@@ -12,6 +12,7 @@ Make a `.env` file with these properties:
 ```
 EMAIL=account username or email
 PASSWORD=account password
+APIKEY=hypixel api key
 ```
 
 If you add `ENV=DEV` it will skip logging in and just generate some fake events.
