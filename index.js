@@ -17,8 +17,8 @@ const addEvents = async () => {
     events = Array.from({length: 40}, (_, i) => ({event: `event ${i}`, timestamp: Date.now() + i * 60e3}));
   } else {
     const newEvents = await getEvents();
-    const last = events[events.length - 1];
-    const toAdd = newEvents.filter(e => e.timestamp > last.timestamp);
+    const last = events[events.length - 1]?.timestamp || 0;
+    const toAdd = newEvents.filter(e => e.timestamp > last);
     events.push(...toAdd);
   }
 };
