@@ -23,6 +23,7 @@ const addEvents = async () => {
   }
 };
 
+// Update events
 (async()=>{
   while(true){
     await addEvents();
@@ -31,14 +32,31 @@ const addEvents = async () => {
   }
 })();
 
-/** @typedef {{uuid: string, supporter: boolean}} Entry */
+/** @type {(key: string) => boolean} */
+const isPossible = key => {
+  if(key.length !== 36) return false; // 32 hex + 4 dashes
+  for(let i = 0; i < 36; i++){
+    if(i === 14) { // Ensure version 4 uuid
+      if(key.charAt(i) !== '4') return false; 
+    }
+    else if([8, 13, 18, 23].includes(i)){ // ensure dashes are at correct place
+      if(key.charAt(i) !== '-') return false;
+    }
+    else if(!'0123456789abcdef'.split('').includes(key.charAt(i))) return false; // ensure only hex characters
+  }
+  return true;
+}
+
+/** @typedef {{uuid: string, supporter: boolean, checked: number}} Entry */
 
 const validateKey = (() => {
-  /** @type {Record<string, Entry>} */
+  /** @type {Record<string, Entry | false>} */
   const store = {};
 
   /** @type {(key: string) => Promise<undefined | string>} */
   const checkKey = async key => {
+    if(!isPossible(key)) return false;
+
     try{
       const keyRequest = await fetch(`https://api.hypixel.net/key?key=${key}`);
       if(!keyRequest.ok) return;
@@ -64,20 +82,34 @@ const validateKey = (() => {
     }
   }
 
+  // Remove keys from cache
+  (async()=>{
+    while(true){
+      await new Promise(r => setTimeout(r, 86400e3))
+      for(const key of store){
+        if(!store[key]) continue;
+        if(store[key].checked + (30 * 86400e3) < Date.now()) delete store[key];
+      }
+    }
+  })();
+
   return /** @type {(key: string) => Promise<Boolean>} */ async key => {
     if(key in store) {
+      if(!store[key]) return false;
       if(store[key].supporter) return true;
       const supporter = await checkUUID(store[key].uuid);
       store[key].supporter = supporter;
       return supporter;
+    }else{
+      const uuid = await checkKey(key);
+      if(!uuid) {
+        store[key] = false;
+        return false;
+      }
+      const supporter = await checkUUID(uuid);
+      store[key] = { uuid, supporter, checked: Date.now() };
+      return supporter;
     }
-    const uuid = await checkKey(key);
-    if(!uuid) return false;
-    const supporter = await checkUUID(uuid);
-    store[key] = { uuid, supporter };
-    // expire after 7 days
-    setTimeout(() => store[key] = undefined, 7 * 24 * 60 * 60 * 1e3);
-    return supporter;
   }
 })();
 
@@ -87,7 +119,7 @@ app.use('/', async (req, res) => {
 
   let key = req.query.key;
 
-  if(key && key.length === 36){
+  if(key){
     const isValid = await validateKey(key);
     if(isValid) return res.send(events);
   }
