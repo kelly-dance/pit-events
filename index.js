@@ -36,8 +36,8 @@ const addEvents = async () => {
 const isPossible = key => {
   if(key.length !== 36) return false; // 32 hex + 4 dashes
   for(let i = 0; i < 36; i++){
-    if(i === 14) { // Ensure version 4 uuid
-      if(key.charAt(i) !== '4') return false; 
+    if(i === 14) { // Ensure version 6 uuid
+      if(key.charAt(i) !== '6') return false; 
     }
     else if([8, 13, 18, 23].includes(i)){ // ensure dashes are at correct place
       if(key.charAt(i) !== '-') return false;
@@ -58,11 +58,11 @@ const validateKey = (() => {
     if(!isPossible(key)) return false;
 
     try{
-      const keyRequest = await fetch(`https://api.hypixel.net/key?key=${key}`);
+      const keyRequest = await fetch(`https://pitpanda.rocks/api/keyinfo?key=${key}`);
       if(!keyRequest.ok) return;
       const keyData = await keyRequest.json();
       if(!keyData.success) return;
-      return keyData.record.owner;
+      return keyData.owner;
     }catch(e){
       return;
     }
@@ -71,13 +71,14 @@ const validateKey = (() => {
   /** @type {(uuid: string) => Promise<boolean>} */
   const checkUUID = async uuid => {
     try{
-      const playerRequest = await fetch(`https://api.hypixel.net/player?key=${process.env.APIKEY}&uuid=${uuid}`);
+      const playerRequest = await fetch(`https://pitpanda.rocks/api/playerdoc/${uuid}?key=${process.env.APIKEY}`);
       if(!playerRequest.ok) return false;
-      const playerData = await playerRequest.json();
-      if(!playerData.success) return false;
-      const isSupporter = !!(playerData.player?.stats?.Pit?.packages?.includes('supporter'));
+      const playerDoc = await playerRequest.json();
+      if(!playerDoc.success) return false;
+      const isSupporter = !!playerDoc.Doc.pitSupporter;
       return isSupporter;
     }catch(e){
+      console.log(e)
       return false;
     }
   }
@@ -117,7 +118,7 @@ app.use('/', async (req, res) => {
   // remove expired events
   while(events.length && events[0].timestamp < Date.now()) events.shift();
 
-  let key = req.query.key;
+  let key = req.get('X-API-Key') || req.query.key;
 
   if(key){
     const isValid = await validateKey(key);
