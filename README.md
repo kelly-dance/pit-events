@@ -10,9 +10,12 @@ Currently, only supports Microsoft accounts. This is a trivial fix if someone wa
 
 Make a `.env` file with these properties:
 ```
-EMAIL=account username or email
-PASSWORD=account password
-APIKEY=hypixel api key
+
+ENV=DEV or PROD
+APIKEY=PitPanda API key
+EMAIL=Minecraft Username or Email
+PASSWORD=Minecraft password
+
 ```
 
-If you add `ENV=DEV` it will skip logging in and just generate some fake events.
+If you use `ENV=DEV` It will just generate some fake events and not connect the mineflayer bot. 
