@@ -58,7 +58,7 @@ const validateKey = (() => {
     if(!isPossible(key)) return false;
 
     try{
-      const keyRequest = await fetch(`https://pitpanda.rocks/api/keyinfo?key=${key}`);
+      const keyRequest = await fetch(`https://pitpanda.rocks/api/keyinfo?key=${process.env.APIKEY}&checkkey=${key}`);
       if(!keyRequest.ok) return;
       const keyData = await keyRequest.json();
       if(!keyData.success) return;
