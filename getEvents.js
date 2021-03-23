@@ -5,6 +5,14 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 /** @returns {Promise<{timestamp: number, event: string}[]>} */
 const getEvents = () => new Promise(resolve => {
+  let resolved = false;
+  setTimeout(async () => {
+    if(resolved) return;
+    console.log('BOT FAILED? retrying in 30 seconds.');
+    bot.quit();
+    await new Promise(r => setTimeout(r, 30e3));
+    return getEvents();
+  }, 60e3);
   const bot = mineflayer.createBot({
     host: 'mc.hypixel.net',
     username: process.env.EMAIL,
@@ -59,7 +67,8 @@ const getEvents = () => new Promise(resolve => {
                   const now = Math.floor(Date.now() / 60e3) * 60e3; 
                   const offset = (parseInt(m[1]) * 60 + parseInt(m[2])) * 60e3;
                   return {timestamp: now + offset, event: m[3]};
-                })
+                });
+              resolved = true;
               resolve(processed);
               bot.quit();
             };
