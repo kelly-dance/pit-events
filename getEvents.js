@@ -11,7 +11,7 @@ const getEvents = () => new Promise(resolve => {
     console.log('BOT FAILED? retrying in 30 seconds.');
     bot.quit();
     await new Promise(r => setTimeout(r, 30e3));
-    return getEvents();
+    resolve(getEvents());
   }, 60e3);
   const bot = mineflayer.createBot({
     host: 'mc.hypixel.net',
