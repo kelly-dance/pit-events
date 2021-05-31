@@ -36,8 +36,8 @@ const addEvents = async () => {
 const isPossible = key => {
   if(key.length !== 36) return false; // 32 hex + 4 dashes
   for(let i = 0; i < 36; i++){
-    if(i === 14) { // Ensure version 6 uuid
-      if(key.charAt(i) !== '6') return false; 
+    if(i === 14) { // Ensure version 4 uuid
+      if(key.charAt(i) !== '4') return false; 
     }
     else if([8, 13, 18, 23].includes(i)){ // ensure dashes are at correct place
       if(key.charAt(i) !== '-') return false;
@@ -113,27 +113,27 @@ const validateKey = (() => {
     }
   }
 })();
-let majors = ["tdm", "teamdeathmatch", "ragepit", "raffle", "beast", "squads", "blockhead", "robbery", "spire", "pizza", "delivery"]
-app.use('/', async (req, res) => {
-  // remove expired events
-  while(events.length && events[0].timestamp < Date.now()) events.shift();
-
-  let key = req.get('X-API-Key') || req.query.key;
-
-  if(key){
-    const isValid = await validateKey(key);
-    if(isValid) return res.send(events);
-  }
-  
-  // without a key limit to only the next 5 events
-  res.send(events.slice(0, 5));
-});
+let majors = ["tdm", "event1" /* testing */, "teamdeathmatch", "ragepit", "raffle", "beast", "squads", "blockhead", "robbery", "spire", "pizza", "delivery"]
 app.use('/1major3minor', async (req, res) => { // UNTESTED
   // remove expired events
   while(events.length && events[0].timestamp < Date.now()) events.shift();
   let minor = events.filter(x=>!majors.includes(x.event.replace(/ +/g, "").toLowerCase())).slice(0, 3)
-  while (minors.length < 3) {minors.push({event: "None", timestamp: 0})}
+  while (minor.length < 3) {minor.push({event: "None", timestamp: 0})}
   let major = events.find(x=>majors.includes(x.event.replace(/ +/g, "").toLowerCase())) || {event: "None", timestamp: 0}
   res.send({major, minor})
 });
+app.use('/', async (req, res) => {
+    // remove expired events
+    while(events.length && events[0].timestamp < Date.now()) events.shift();
+  
+    let key = req.get('X-API-Key') || req.query.key;
+  
+    if(key){
+      const isValid = await validateKey(key);
+      if(isValid) return res.send(events);
+    }
+    
+    // without a key limit to only the next 5 events
+    res.send(events.slice(0, 5));
+  });
 app.listen(5002, () => console.log('API running on port 5002'));
