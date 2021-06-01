@@ -1,6 +1,7 @@
 const dotenv = require('dotenv');
 const express = require('express');
 const fetch = require('node-fetch');
+const cors = require('cors');
 
 dotenv.config();
 
@@ -8,13 +9,21 @@ const getEvents = require('./getEvents');
 
 const app = express();
 
-/** @type {{timestamp: number, event: string}[]} */
+app.use(cors());
+
+/** @type {{timestamp: number, event: string, type: 'minor' | 'major'}[]} */
 let events = [];
 
 const addEvents = async () => {
   if(process.env.ENV === 'DEV'){
     // just used for testing so the bot doesnt have to logon excessively
-    events = Array.from({length: 40}, (_, i) => ({event: `event ${i}`, timestamp: Date.now() + i * 60e3}));
+    events = Array.from({length: 40}, (_, i) => {
+      return {
+        event: `event ${i}`,
+        timestamp: Date.now() + i * 60e3,
+        type: Math.random() < 1 / 8 ? 'major' : 'minor',
+      }
+    });
   } else {
     const newEvents = await getEvents();
     const last = events[events.length - 1]?.timestamp || 0;
@@ -36,8 +45,8 @@ const addEvents = async () => {
 const isPossible = key => {
   if(key.length !== 36) return false; // 32 hex + 4 dashes
   for(let i = 0; i < 36; i++){
-    if(i === 14) { // Ensure version 6 uuid
-      if(key.charAt(i) !== '6') return false; 
+    if(i === 14) { // Ensure version 4 uuid
+      if(key.charAt(i) !== '4') return false; 
     }
     else if([8, 13, 18, 23].includes(i)){ // ensure dashes are at correct place
       if(key.charAt(i) !== '-') return false;
@@ -55,7 +64,7 @@ const validateKey = (() => {
 
   /** @type {(key: string) => Promise<undefined | string>} */
   const checkKey = async key => {
-    if(!isPossible(key)) return false;
+    if(!isPossible(key)) return;
 
     try{
       const keyRequest = await fetch(`https://pitpanda.rocks/api/keyinfo?key=${process.env.APIKEY}&checkkey=${key}`);
@@ -86,7 +95,7 @@ const validateKey = (() => {
   // Remove keys from cache
   (async()=>{
     while(true){
-      await new Promise(r => setTimeout(r, 86400e3))
+      await new Promise(r => setTimeout(r, 86400e3));
       for(const key of store){
         if(!store[key]) continue;
         if(store[key].checked + (30 * 86400e3) < Date.now()) delete store[key];
@@ -113,6 +122,20 @@ const validateKey = (() => {
     }
   }
 })();
+
+app.use('/1major3minor', async (req, res) => {
+  // remove expired events
+  while(events.length && events[0].timestamp < Date.now()) events.shift();
+
+  const major = events.find(e => e.type === 'major') || { event: 'None', timestamp: 0, type: 'major' };
+
+  const minors = events.filter(e => e.type === 'minor').slice(0, 3);
+  while (minors.length < 3) {
+    minors.push({ event: "None", timestamp: 0, type: 'minor' });
+  }
+
+  res.send({ major, minors });
+});
 
 app.use('/', async (req, res) => {
   // remove expired events

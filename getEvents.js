@@ -2,6 +2,7 @@ const mineflayer = require('mineflayer');
 const nbt = require('prismarine-nbt');
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const majors = ['Blockhead', 'Pizza', 'Beast', 'Robbery', 'Spire', 'Squads', 'Team Deathmatch', 'Raffle', 'Rage Pit'];
 
 /** @returns {Promise<{timestamp: number, event: string}[]>} */
 const getEvents = () => new Promise(resolve => {
@@ -66,7 +67,12 @@ const getEvents = () => new Promise(resolve => {
                 .map(m => {
                   const now = Math.floor(Date.now() / 60e3) * 60e3; 
                   const offset = (parseInt(m[1]) * 60 + parseInt(m[2])) * 60e3;
-                  return {timestamp: now + offset, event: m[3]};
+                  const event = m[3];
+                  return {
+                    event,
+                    timestamp: now + offset,
+                    type: majors.includes(event) ? 'major' : 'minor',
+                  };
                 });
               resolved = true;
               resolve(processed);
