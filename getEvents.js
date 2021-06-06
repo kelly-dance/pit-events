@@ -71,7 +71,7 @@ const getEvents = () => new Promise(resolve => {
                   const event = m[3];
                   return {
                     event,
-                    timestamp: now + offset + OFFSET_CONSTANT,
+                    timestamp: (Math.floor((now + offset) / 60000) * 60000) + OFFSET_CONSTANT,
                     type: majors.includes(event) ? 'major' : 'minor',
                   };
                 });
