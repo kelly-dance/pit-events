@@ -4,7 +4,7 @@ const nbt = require('prismarine-nbt');
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const majors = ['Blockhead', 'Pizza', 'Beast', 'Robbery', 'Spire', 'Squads', 'Team Deathmatch', 'Raffle', 'Rage Pit'];
 
-/** @returns {Promise<{timestamp: number, event: string}[]>} */
+/** @returns {Promise<{timestamp: number, event: string, type: 'major'|'minor'}[]>} */
 const getEvents = () => new Promise(resolve => {
   let resolved = false;
   setTimeout(async () => {
@@ -61,11 +61,11 @@ const getEvents = () => new Promise(resolve => {
             const onWindowFn = window => {
               /** @type {import('prismarine-item').Item[]} */
               const items = window.containerItems();
-              const lore = items.map(item => nbt.simplify(item.nbt).display.Lore).flat(1).map(s => JSON.parse(s).extra[0].extra.map(t => t.text).join(''));
+              const lore = items.map(item => nbt.simplify(item.nbt).display.Lore).flat(1).map(s => JSON.parse(s).extra.map(t => t.text).join(''));
               const processed = lore.map(s => s.match(/\+(\d\d)h(\d\d)m: (.*)$/))
                 .filter(Boolean)
                 .map(m => {
-                  const now = Math.floor(Date.now() / 60e3) * 60e3; 
+                  const now = Math.ceil(Date.now() / 60e3) * 60e3; 
                   const offset = (parseInt(m[1]) * 60 + parseInt(m[2])) * 60e3;
                   const event = m[3];
                   return {

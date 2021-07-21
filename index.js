@@ -36,8 +36,8 @@ const addEvents = async () => {
 (async()=>{
   while(true){
     await addEvents();
-    // 4-8 hours
-    await new Promise(r => setTimeout(r, (4 + Math.random() * 4) * 60 * 60 * 1e3))
+    // 2-4 hours
+    await new Promise(r => setTimeout(r, (2 + Math.random() * 2) * 60 * 60 * 1e3))
   }
 })();
 
